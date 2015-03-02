@@ -31,8 +31,7 @@
     "require-dev": {
         "phpunit/phpunit": "*",
         "phing/phing": "*",
-        "sami/sami": "*",
-	"bitwasp/bitcoin-lib": "*"
+        "sami/sami": "*"
     },
     "config": {
         "bin-dir": "bin"
