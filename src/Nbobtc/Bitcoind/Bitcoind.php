@@ -14,12 +14,53 @@ class Bitcoind implements BitcoindInterface
     protected $client;
 
     /**
+     * @var array
+     */
+    protected $magic_bytes;
+
+    /**
+     * @var array
+     */
+    protected $acceleratable;
+
+
+    /**
      * @param ClientInterface $client
      */
     public function __construct(ClientInterface $client)
     {
-        $this->client = $client;
+      $this->client = $client;
+      if ( class_exists("BitWasp\\BitcoinLib\\BitcoinLib") && $this->client->getMagicByte()) {
+        $this->magic_bytes = [
+          $this->client->getMagicByte(),
+          $this->client->getMagicP2shByte()
+        ];
+        $this->acceleratable = true;
+      } else {
+        $this->acceleratable = false;
+      }
     }
+
+    /**
+     * @inheritdoc
+     */
+    public function enableAcceleration()
+    {
+      if (class_exists("BitWasp\\BitcoinLib\\BitcoinLib")) {
+        $this->acceleratable = true;
+      }
+      return $this;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function disableAcceleration()
+    {
+      $this->acceleratable = false;
+      return $this;
+    }
+
 
     /**
      * @inheritdoc
@@ -60,10 +101,14 @@ class Bitcoind implements BitcoindInterface
     /**
      * @inheritdoc
      */
-    public function createrawtransaction(array $transactions, $addresses)
+    public function createrawtransaction(array $transactions, $addresses) //inputs, outputs
     {
-        $response = $this->client->execute('createrawtransaction', array($transactions, $addresses));
-        return $response->result;
+      if ($accelerate && $this->acceleratable) {
+          return \BitWasp\BitcoinLib\RawTransaction::create($transactions, $addresses, $this->magic_byte, $this->magic_p2sh_byte);
+      } else {
+          $response = $this->client->execute('createrawtransaction', array($transactions, $addresses));
+          return $response->result;
+      }
     }
 
     /**
@@ -71,8 +116,14 @@ class Bitcoind implements BitcoindInterface
      */
     public function decoderawtransaction($hex)
     {
-        $response = $this->client->execute('decoderawtransaction', $hex);
-        return $response->result;
+
+        if ($this->acceleratable) {
+            $raw = \BitWasp\BitcoinLib\RawTransaction::decode($hex, $this->magic_byte, $this->magic_p2sh_byte);
+            return $raw;
+        } else {
+            $response = $this->client->execute('decoderawtransaction', $hex);
+            return $response->result;
+        }
     }
 
     /**
@@ -607,10 +658,20 @@ class Bitcoind implements BitcoindInterface
     /**
      * @inheritdoc
      */
-    public function validateaddress($address)
+    public function validateaddress($address, $accelerate = true)
     {
+      if ($accelerate && $this->acceleratable) {
+        $isvalid = \BitWasp\BitcoinLib\BitcoinLib::validate_address($address, $this->magic_bytes[0], $this->magic_bytes[1]);
+        //NOTE: 'ismine' will be unavailible, if needed disableAccelleration
+        return [
+          'address' => $address,
+          'isvalid' => $isvalid,
+          'ismine' => null
+        ];
+      } else { //fallback to rpc
         $response = $this->client->execute('validateaddress', $address);
         return $response->result;
+      }
     }
 
     /**

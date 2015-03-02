@@ -12,20 +12,38 @@ class Client implements ClientInterface
      * @var string
      */
     protected $dsn;
-    
+
     /**
      * @var string
      */
     protected $cacert;
 
     /**
+     * @var string
+     */
+    protected $magic_byte;
+
+    /**
+     * @var string
+     */
+    protected $magic_p2sh_byte;
+
+
+    /**
+     *
      * @param string|null $dsn
      * @param string|null $cert The file path to a certificate you'd like to use for SSL verification
+     * @param string|null $magic_byte magic_byte for addresses
+     * @param string|null $magic_p2sh_byte magic_p2sh_byte
+     *
      */
-    public function __construct($dsn = null, $cacert = null)
+    public function __construct($dsn = null, $cacert = null, $magic_byte = null, $magic_p2sh_byte = null)
     {
-        $this->dsn = $dsn;
-        $this->cacert = $cacert;
+      $this->dsn = $dsn;
+      $this->cacert = $cacert;
+      $this->magic_byte = $magic_byte;
+      $this->magic_p2sh_byte = $magic_p2sh_byte;
+
     }
 
     /**
@@ -37,7 +55,7 @@ class Client implements ClientInterface
         $this->dsn = $dsn;
         return $this;
     }
-    
+
     /**
      * @param string $cacert
      * @return Client
@@ -47,6 +65,51 @@ class Client implements ClientInterface
         $this->cacert = $cacert;
         return $this;
     }
+
+    /**
+     * @param string $version
+     * @return Client
+     */
+    public function setMagicByte($magic_byte)
+    {
+        $this->magic_byte = $magic_byte;
+        return $this;
+    }
+
+    /**
+     * @param string $version
+     * @return Client
+     */
+    public function getMagicByte()
+    {
+        return $this->magic_byte;
+    }
+
+
+
+    /**
+     * @param string $version
+     * @return Client
+     */
+
+    public function setMagicP2shByte($magic_p2sh_byte) {
+      $this->magic_p2sh_byte = $magic_p2sh_byte;
+      return $this;
+    }
+
+
+    /**
+     * @param string $version
+     * @return Client
+     */
+
+    public function getMagicP2shByte() {
+      return $this->magic_p2sh_byte;
+    }
+
+
+
+
 
     /**
      * @param string       $method
@@ -74,9 +137,9 @@ class Client implements ClientInterface
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_TIMEOUT        => 60,
         ));
-        
+
         if($this->cacert) curl_setopt($ch, CURLOPT_CAINFO, $this->cacert);
-        
+
         $response = curl_exec($ch);
         $status = curl_getinfo($ch);
         curl_close($ch);

@@ -14,6 +14,20 @@ interface BitcoindInterface
 {
 
     /**
+     * Disable use of bitcoin-lib native php functions where availible
+     *
+     * @return  Nbobtc\Bitcoind\Bitcoind
+     */
+    public function disableAcceleration();
+
+    /**
+     * Enable use of bitcoin-lib native php functions where availible
+     *
+     * @return  Nbobtc\Bitcoind\Bitcoind
+     */
+    public function enableAcceleration();
+
+    /**
      * Add a nrequired-to-sign multisignature address to the wallet
      * each key is a Bitcoin address or hex-encoded public key
      * If $account is specified, assign address to $account
@@ -480,10 +494,14 @@ interface BitcoindInterface
 
     /**
      * Returns information about $address
+     * @param string $address The address to validate
+     * @param boolean $accelerate Use native function library if availible
+     *                            'ismine' property of accelerated results will
+     *                            be null necessitating this option
      *
      * @return array
      */
-    public function validateaddress($address);
+    public function validateaddress($address, $accelerate = true);
 
     /**
      * Verify a signed message
