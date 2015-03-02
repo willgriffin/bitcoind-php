@@ -16,13 +16,17 @@ class Bitcoind implements BitcoindInterface
     /**
      * @var array
      */
-    protected $magic_bytes;
+    protected $magic_byte;
+
+    /**
+     * @var array
+     */
+    protected $magic_p2sh_byte;
 
     /**
      * @var array
      */
     protected $acceleratable;
-
 
     /**
      * @param ClientInterface $client
@@ -31,10 +35,8 @@ class Bitcoind implements BitcoindInterface
     {
       $this->client = $client;
       if ( class_exists("BitWasp\\BitcoinLib\\BitcoinLib") && $this->client->getMagicByte()) {
-        $this->magic_bytes = [
-          $this->client->getMagicByte(),
-          $this->client->getMagicP2shByte()
-        ];
+        $this->magic_byte = $this->client->getMagicByte();
+        $this->magic_p2sh_byte = $this->client->getMagicP2shByte();
         $this->acceleratable = true;
       } else {
         $this->acceleratable = false;
@@ -661,7 +663,7 @@ class Bitcoind implements BitcoindInterface
     public function validateaddress($address, $accelerate = true)
     {
       if ($accelerate && $this->acceleratable) {
-        $isvalid = \BitWasp\BitcoinLib\BitcoinLib::validate_address($address, $this->magic_bytes[0], $this->magic_bytes[1]);
+        $isvalid = \BitWasp\BitcoinLib\BitcoinLib::validate_address($address, $this->magic_byte, $this->magic_p2sh_byte);
         //NOTE: 'ismine' will be unavailible, if needed disableAccelleration
         return [
           'address' => $address,
