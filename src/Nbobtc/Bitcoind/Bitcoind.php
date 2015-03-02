@@ -105,7 +105,10 @@ class Bitcoind implements BitcoindInterface
      */
     public function createrawtransaction(array $transactions, $addresses) //inputs, outputs
     {
-      if ($accelerate && $this->acceleratable) {
+      if ($this->acceleratable) {
+          foreach ($addresses as $key => $val) {
+              $addresses->{$key} = intval(round(floatval($val) * 1e8)); //convert to satoshis
+          }
           return \BitWasp\BitcoinLib\RawTransaction::create($transactions, $addresses, $this->magic_byte, $this->magic_p2sh_byte);
       } else {
           $response = $this->client->execute('createrawtransaction', array($transactions, $addresses));
