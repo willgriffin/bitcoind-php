@@ -107,7 +107,7 @@ class Bitcoind implements BitcoindInterface
     {
       if ($this->acceleratable) {
           foreach ($addresses as $key => $val) {
-              $addresses->{$key} = intval(round(floatval($val) * 1e8)); //convert to satoshis
+              $addresses->{$key} = round($val * 1e8); //convert to satoshis
           }
           return \BitWasp\BitcoinLib\RawTransaction::create($transactions, $addresses, $this->magic_byte, $this->magic_p2sh_byte);
       } else {
@@ -121,10 +121,9 @@ class Bitcoind implements BitcoindInterface
      */
     public function decoderawtransaction($hex)
     {
-
         if ($this->acceleratable) {
-            $raw = \BitWasp\BitcoinLib\RawTransaction::decode($hex, $this->magic_byte, $this->magic_p2sh_byte);
-            return $raw;
+            $decoded = \BitWasp\BitcoinLib\RawTransaction::decode($hex, $this->magic_byte, $this->magic_p2sh_byte);
+            return json_decode(json_encode($decoded)); //array -> stdClass to match rpc $response->result
         } else {
             $response = $this->client->execute('decoderawtransaction', $hex);
             return $response->result;
