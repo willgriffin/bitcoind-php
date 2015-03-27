@@ -107,7 +107,7 @@ class Bitcoind implements BitcoindInterface
     {
       if ($this->acceleratable) {
           foreach ($addresses as $key => $val) {
-              $addresses->{$key} = round($val * 1e8); //convert to satoshis
+              $addresses[$key] = intval(round($val * 1e8)); //convert to satoshis
           }
           return \BitWasp\BitcoinLib\RawTransaction::create($transactions, $addresses, $this->magic_byte, $this->magic_p2sh_byte);
       } else {
@@ -123,6 +123,14 @@ class Bitcoind implements BitcoindInterface
     {
         if ($this->acceleratable) {
             $decoded = \BitWasp\BitcoinLib\RawTransaction::decode($hex, $this->magic_byte, $this->magic_p2sh_byte);
+            for ($x = 0; $x < count($decoded['vout']); $x++) {
+              if (!array_key_exists('n',$decoded['vout'][$x])) {
+                //patch to maintain compatibility with default api output
+                $decoded['vout'][$x]['n'] = $decoded['vout'][$x]['vout'];
+                //this next bit makes me want to stab myself in the eye with a pencil
+                $decoded['vout'][$x]['value'] = intval($decoded['vout'][$x]['value']) / 1e8;
+              }
+            }
             return json_decode(json_encode($decoded)); //array -> stdClass to match rpc $response->result
         } else {
             $response = $this->client->execute('decoderawtransaction', $hex);
@@ -505,6 +513,7 @@ class Bitcoind implements BitcoindInterface
      */
     public function listtransactions($account = null, $count = 10, $from = 0)
     {
+      echo $account,"\n",$count,"\n",$from,"\n\n";
         $response = $this->client->execute('listtransactions', array((string) $account, $count, $from));
         return $response->result;
     }
@@ -637,7 +646,12 @@ class Bitcoind implements BitcoindInterface
      */
     public function signrawtransaction($hex, array $txinfo = array(), array $keys = array(), $sighashtype = 'ALL')
     {
+
+
+
         $response = $this->client->execute('signrawtransaction', array($hex, $txinfo, $keys, $sighashtype));
+        //$response = $this->client->execute('signrawtransaction', array($hex));
+
         return $response->result;
     }
 
@@ -667,7 +681,7 @@ class Bitcoind implements BitcoindInterface
       if ($accelerate && $this->acceleratable) {
         $isvalid = \BitWasp\BitcoinLib\BitcoinLib::validate_address($address, $this->magic_byte, $this->magic_p2sh_byte);
         //NOTE: 'ismine' will be unavailible, if needed disableAccelleration
-        return [
+        return (object)[
           'address' => $address,
           'isvalid' => $isvalid,
           'ismine' => null
